@@ -143,6 +143,18 @@ nav button{color:var(--ni)}nav button.on{color:var(--ac)}
 .cd.up1 .cb em,.cd.up2 .cb em,.cd.up3 .cb em,.cd.dn1 .cb em,.cd.dn2 .cb em,.cd.dn3 .cb em{opacity:.85}
 .cb b{border-top:1.5px solid color-mix(in srgb,currentColor 55%,transparent);padding-top:2px;margin-top:3px}
 .cd.wk.up1,.cd.wk.up2,.cd.wk.up3,.cd.wk.dn1,.cd.wk.dn2,.cd.wk.dn3{border-color:transparent}
+
+/* v-final layout tweaks */
+.cd{min-height:62px;padding:4px 3px;gap:2px}.cd .cb{gap:0;line-height:1.2}.cd .cb span{font-size:9px}.cd .cb b{font-size:10px;margin-top:2px;padding-top:1px}
+.ct{display:flex;justify-content:space-between;align-items:baseline;gap:2px;min-width:0}.ct u{font-size:10px}.ct em{font-style:normal;font-size:8px;color:var(--sub);white-space:nowrap}
+.cd[class*=" up"] .ct em,.cd[class*=" dn"] .ct em{color:inherit;opacity:.85}
+/* datetime inputs must not overflow the card on iOS */
+input[type=datetime-local]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;max-width:100%;min-height:46px;text-align:left}
+input[type=datetime-local]::-webkit-date-and-time-value{text-align:left;min-width:0}
+/* new-trade sheet: full screen, actions at the very bottom of the page */
+.sheet{background:var(--bg);align-items:stretch}
+.sheet .p{height:100%;max-height:none;border-radius:0;padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(28px + env(safe-area-inset-bottom,0px))}
+.stk{position:static;background:none;padding:18px 0 4px;margin-top:6px}
 </style></head><body>
 <div id="app">
 <main id="main"></main>
@@ -156,16 +168,16 @@ nav button{color:var(--ni)}nav button.on{color:var(--ac)}
 const $=id=>document.getElementById(id);
 const K='takaMozeTrades_v1',KS='takaMozeSettings_v1';
 const D_PROF={name:'TAKA',ig:'',uid:'',email:'',tz:'Asia/Taipei',avatar:''};
-const D_CAL={weekly:true,mon:false,wkend:true,mc:true,yc:false},D_RULES={show:true,open:true,size:14,title:'交易規則',text:`1.
-2. 
-3. 
-4. 
-5. 
-6. 
-7.
-8.
-9. 
-10.`};
+const D_CAL={weekly:true,mon:false,wkend:true,mc:true,yc:false},D_RULES={show:true,open:true,size:14,title:'交易規則',text:`1. 一天止盈2單就休息!!!
+2. 連續虧損2單就直接休息!!!
+3. 六日最好別手癢開單。
+4. 去健身房不要開單,沒一次成功的!!!
+5. 每日只做一個方向。
+6. 盡量只在16:00-21:00開單。
+7. 盈利超過1:1 還想繼續放要做保套。
+8. 單不超過12點,一定要手動平倉。
+9. 單筆交易最多2%定損,一天交易最多6%定損。
+10. 重大數據公佈前後不要進場,或是提前平倉。`};
 let rulesOpen=true,S={maker:.02,taker:.05,lev:10,eo:'taker',xo:'taker',cc:[],cm:[],cal:{...D_CAL},rules:{...D_RULES},prof:{...D_PROF},cap:300,risk:2,cur:'USDT',fx:32,feeMode:'pct',feeFixed:0,lang:'zh-TW',pin:'',hid:[],hidM:[]},T=null,tab='home',view='list',flt={q:'',side:'',res:'',tf:''},cm=new Date(2026,9,1),eid=null,dir='Long',dl=null;
 const SEED=[
 ['2026-10-09T22:02','2026-10-09T23:10','BTCUSDT','Long','5m','3+1',112000,111550,1000,111550],
@@ -240,15 +252,15 @@ function calendar(){
  const y=cm.getFullYear(),m=cm.getMonth(),{mon,wkend,weekly,mc,yc}=S.cal,mp=`${y}-${String(m+1).padStart(2,'0')}`,dm={};
  C().forEach(t=>{const k=t.exitDate.slice(0,10),p=pnl(t),o=dm[k]||(dm[k]={w:0,l:0,n:0});p>=0?o.w+=p:o.l+=p;o.n++});
  const n=new Date(y,m+1,0).getDate(),off=(new Date(y,m,1).getDay()-(mon?1:0)+7)%7,full=mon?[1,2,3,4,5,6,0]:[0,1,2,3,4,5,6],cols=full.map((d,i)=>[d,i]).filter(([d])=>wkend||(d!==0&&d!==6)),nw=Math.ceil((n+off)/7),key=d=>mp+'-'+String(d).padStart(2,'0');
- const body=o=>{if(!o)return'';const net=o.w+o.l;return`${o.w?`<span class="pos">${f1(o.w)}</span>`:''}${o.l?`<span class="neg">${f1(o.l)}</span>`:''}<b class="${sg(net)}">${f1(net)}</b><em>${o.n}次</em>`};
+ const body=o=>{if(!o)return'';const net=o.w+o.l;return`${o.w?`<span class="pos">${f1(o.w)}</span>`:''}${o.l?`<span class="neg">${f1(o.l)}</span>`:''}<b class="${sg(net)}">${f1(net)}</b>`};
  const W=[];for(let w=0;w<nw;w++){const wo={w:0,l:0,n:0};for(let ps=0;ps<7;ps++){const d=w*7+ps-off+1;if(d<1||d>n)continue;const o=dm[key(d)];if(o){wo.w+=o.w;wo.l+=o.l;wo.n+=o.n}}W.push(wo)}
  const mkTier=vals=>{const P=vals.filter(v=>v>0).sort((a,b)=>b-a),N=vals.filter(v=>v<0).map(v=>-v).sort((a,b)=>b-a);return v=>{if(!v)return'';const L=v>0?P:N,i=L.indexOf(Math.abs(v));return(v>0?'up':'dn')+(i<L.length/3?3:i<L.length*2/3?2:1)}};
  const dn=[];for(let d=1;d<=n;d++){const o=dm[key(d)];if(o)dn.push(o.w+o.l)}
  const tD=mkTier(dn),tW=mkTier(W.filter(x=>x.n).map(x=>x.w+x.l));
  let g=cols.map(([wd])=>`<div class="ch">${'日一二三四五六'[wd]}</div>`).join('')+(weekly?'<div class="ch">合計</div>':''),mo={w:0,l:0,n:0};
  for(let w=0;w<nw;w++){const wo=W[w];
-  cols.forEach(([wd,ps])=>{const d=w*7+ps-off+1;if(d<1||d>n){g+='<div class="cd" style="visibility:hidden"></div>';return}const o=dm[key(d)];g+=`<div class="cd ${o?tD(o.w+o.l):''}"><u>${d}</u><div class="cb">${body(o)}</div></div>`});
-  if(weekly)g+=`<div class="cd wk ${wo.n?tW(wo.w+wo.l):''}"><u>W${w+1}</u><div class="cb">${body(wo.n?wo:null)}</div></div>`;
+  cols.forEach(([wd,ps])=>{const d=w*7+ps-off+1;if(d<1||d>n){g+='<div class="cd" style="visibility:hidden"></div>';return}const o=dm[key(d)];g+=`<div class="cd ${o?tD(o.w+o.l):''}"><div class="ct"><u>${d}</u>${o?`<em>${o.n}次</em>`:''}</div><div class="cb">${body(o)}</div></div>`});
+  if(weekly)g+=`<div class="cd wk ${wo.n?tW(wo.w+wo.l):''}"><div class="ct"><u>W${w+1}</u>${wo.n?`<em>${wo.n}次</em>`:''}</div><div class="cb">${body(wo.n?wo:null)}</div></div>`;
   mo.w+=wo.w;mo.l+=wo.l;mo.n+=wo.n}
  const tot=mo.w+mo.l;
  return`<div class="card sec"><div class="top" style="margin:0 0 8px"><button class="ib" onclick="cm=new Date(${y},${m-1},1);render()">‹</button><div style="text-align:center"><b>${y}/${String(m+1).padStart(2,'0')}</b><br><small class="${sg(tot)}">月度 ${fmt(tot)} · ${mo.n} 次</small></div><button class="ib" onclick="cm=new Date(${y},${m+1},1);render()">›</button></div><div class="cal2" style="grid-template-columns:repeat(${cols.length+(weekly?1:0)},minmax(0,1fr))">${g}</div></div>`
