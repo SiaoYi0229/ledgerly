@@ -156,16 +156,16 @@ nav button{color:var(--ni)}nav button.on{color:var(--ac)}
 const $=id=>document.getElementById(id);
 const K='takaMozeTrades_v1',KS='takaMozeSettings_v1';
 const D_PROF={name:'TAKA',ig:'',uid:'',email:'',tz:'Asia/Taipei',avatar:''};
-const D_CAL={weekly:true,mon:false,wkend:true,mc:true,yc:false},D_RULES={show:true,open:true,size:14,title:'交易規則',text:`1. 一天止盈2單就休息!!!
-2. 連續虧損2單就直接休息!!!
-3. 六日最好別手癢開單。
-4. 去健身房不要開單,沒一次成功的!!!
-5. 每日只做一個方向。
-6. 盡量只在16:00-21:00開單。
-7. 盈利超過1:1 還想繼續放要做保套。
-8. 單不超過12點,一定要手動平倉。
-9. 單筆交易最多2%定損,一天交易最多6%定損。
-10. 重大數據公佈前後不要進場,或是提前平倉。`};
+const D_CAL={weekly:true,mon:false,wkend:true,mc:true,yc:false},D_RULES={show:true,open:true,size:14,title:'交易規則',text:`1.
+2. 
+3. 
+4. 
+5. 
+6. 
+7.
+8.
+9. 
+10.`};
 let rulesOpen=true,S={maker:.02,taker:.05,lev:10,eo:'taker',xo:'taker',cc:[],cm:[],cal:{...D_CAL},rules:{...D_RULES},prof:{...D_PROF},cap:300,risk:2,cur:'USDT',fx:32,feeMode:'pct',feeFixed:0,lang:'zh-TW',pin:'',hid:[],hidM:[]},T=null,tab='home',view='list',flt={q:'',side:'',res:'',tf:''},cm=new Date(2026,9,1),eid=null,dir='Long',dl=null;
 const SEED=[
 ['2026-10-09T22:02','2026-10-09T23:10','BTCUSDT','Long','5m','3+1',112000,111550,1000,111550],
