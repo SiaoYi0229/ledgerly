@@ -155,6 +155,7 @@ input[type=datetime-local]::-webkit-date-and-time-value{text-align:left;min-widt
 .sheet{background:var(--bg);align-items:stretch}
 .sheet .p{height:100%;max-height:none;border-radius:0;padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(28px + env(safe-area-inset-bottom,0px))}
 .stk{position:static;background:none;padding:18px 0 4px;margin-top:6px}
+.cgrp{flex:0 0 100%;display:flex;flex-wrap:wrap;gap:6px}#cc,#mc{gap:8px 6px}
 </style></head><body>
 <div id="app">
 <main id="main"></main>
@@ -188,7 +189,11 @@ const SEED=[
 ['2026-10-05T09:30','2026-10-05T11:00','SOLUSDT','Long','5m','ICT',220,226,1200,214],
 ['2026-10-10T20:10','','ETHUSDT','Long','5m','3+1',4320,'',1000,4270]];
 const sample=()=>SEED.map((a,i)=>({id:'s'+i,entryDate:a[0],exitDate:a[1],symbol:a[2],side:a[3],tf:a[4],strategy:a[5],entryPrice:a[6],exitPrice:a[7],sizeMode:'notional',positionSize:a[8],quantity:'',leverage:10,eo:'taker',xo:'taker',feeMode:'auto',fees:0,fundingFee:0,stopLoss:a[9],tpLevel:'',takeProfit:'',discipline:'',marketState:'',setup:'',notes:''}));
-function load(){try{T=JSON.parse(localStorage.getItem(K)||'null')}catch{T=null}try{S={...S,...JSON.parse(localStorage.getItem(KS)||'{}')}}catch{}if(!Array.isArray(T))T=sample();S.cal={...D_CAL,...S.cal};S.rules={...D_RULES,...S.rules};S.prof={...D_PROF,...S.prof}}
+function load(){try{T=JSON.parse(localStorage.getItem(K)||'null')}catch{T=null}try{S={...S,...JSON.parse(localStorage.getItem(KS)||'{}')}}catch{}if(!Array.isArray(T))T=sample();S.cal={...D_CAL,...S.cal};S.rules={...D_RULES,...S.rules};S.prof={...D_PROF,...S.prof};fold()}
+function fold(){
+ S.hid=(S.hid||[]).filter(n=>CONDS.some(c=>c[0]===n));S.hidM=(S.hidM||[]).filter(n=>MOODS.includes(n));
+ S.cc=(S.cc||[]).filter(x=>{const d=CONDS.find(c=>c[0]===x[0]);if(d&&(!x[2]||x[2]===clr([d[0],d[1]]))){S.hid=S.hid.filter(n=>n!==x[0]);return false}return true});
+ S.cm=(S.cm||[]).filter(x=>{const n=Array.isArray(x)?x[0]:x,c=Array.isArray(x)?x[1]:PAL[7];if(MOODS.includes(n)&&c===(MCOL[n]||PAL[6])){S.hidM=S.hidM.filter(m=>m!==n);return false}return true})}
 function save(){try{localStorage.setItem(K,JSON.stringify(T));localStorage.setItem(KS,JSON.stringify(S))}catch{toast('儲存失敗')}}
 function toast(s){const t=$('toast');t.textContent=s;t.style.display='block';setTimeout(()=>t.style.display='none',2200)}
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -358,7 +363,9 @@ function ana(){
 let sub=null,ncol=null,ed=null,ecol=null;
 const PAL=['#ef5350','#f59e0b','#d4a017','#8bc34a','#43a047','#26a69a','#3b82f6','#8b5cf6','#ec4899','#9ca3af'],NP=PAL.filter((_,i)=>i!==0&&i!==4),MCOL={'冷靜':PAL[6],'猶豫':PAL[1],'FOMO怕錯過':PAL[7],'想追回虧損':PAL[0],'心情差':PAL[9],'心情好':PAL[4],'測試方法':PAL[6]};
 const hsh=n=>[...n].reduce((x,c)=>x+c.charCodeAt(0),0);
-const clr=a=>a[2]||(a[1]==='L'?PAL[4]:a[1]==='S'?PAL[0]:NP[hsh(a[0])%NP.length]);
+const clr=a=>a[2]||(/^\d+M進場$/.test(a[0])?PAL[1]:a[1]==='L'?PAL[4]:a[1]==='S'?PAL[0]:NP[hsh(a[0])%NP.length]);
+const ORDER=[PAL[1],PAL[4],PAL[0],PAL[2],PAL[3],PAL[5],PAL[6],PAL[7],PAL[8],PAL[9]];
+const gp=(arr,cf)=>{const key=a=>{const i=ORDER.indexOf(cf(a));return i<0?99:i},m=new Map();arr.map((a,i)=>[a,i]).sort((x,y)=>key(x[0])-key(y[0])||x[1]-y[1]).forEach(([a])=>{const c=cf(a);if(!m.has(c))m.set(c,[]);m.get(c).push(a)});return[...m.values()]};
 const moodAll=()=>[...MOODS.filter(n=>!(S.hidM||[]).includes(n)).map(n=>[n,MCOL[n]||PAL[6]]),...(S.cm||[]).map(x=>Array.isArray(x)?x:[x,PAL[7]])].filter((a,i,r)=>r.findIndex(b=>b[0]===a[0])===i);
 const isSysC=n=>CONDS.some(x=>x[0]===n)&&!(S.hid||[]).includes(n),isSysM=n=>MOODS.includes(n)&&!(S.hidM||[]).includes(n);
 const TZS=['Asia/Taipei','Asia/Hong_Kong','Asia/Shanghai','Asia/Tokyo','Asia/Seoul','Asia/Singapore','UTC','Europe/London','America/New_York','America/Los_Angeles'];
@@ -369,7 +376,7 @@ function tsm(m){window._tsm=m;['none','fixed','pct'].forEach(k=>$('tm_'+k).class
 function saveTrade(){S.cap=+$('ts_cap').value||0;S.lev=+$('ts_lev').value||10;S.risk=+$('ts_risk').value||2;S.fx=+$('ts_fx').value||32;S.feeMode=window._tsm;S.taker=+$('ts_rate').value||0;S.feeFixed=+$('ts_fixv').value||0;save();toast('已儲存')}
 function resetTrade(){S.cap=300;S.risk=2;S.fx=32;S.lev=10;S.feeMode='pct';S.taker=.05;S.feeFixed=0;save();render();toast('已重設')}
 function listSet(k){
- const c=k==='cc',items=c?allC():moodAll(),sys=n=>c?isSysC(n):isSysM(n),hid=(c?S.hid:S.hidM)||[];ncol=ncol||PAL[6];
+ const c=k==='cc',items=gp(c?allC():moodAll(),c?clr:(m=>m[1])).flat(),sys=n=>c?isSysC(n):isSysM(n),hid=((c?S.hid:S.hidM)||[]).filter(n=>c?CONDS.some(x=>x[0]===n):MOODS.includes(n));ncol=ncol||PAL[6];
  const sw=(cur,cls,fn)=>`<div class="sws">${PAL.map((x,i)=>`<button type="button" class="sw2 ${cls} ${x===cur?'on':''}" style="background:${x}" onclick="${fn}"></button>`.replace('IDX',i)).join('')}</div>`;
  const rowH=x=>{const n=x[0],col=c?clr(x):x[1];
   if(ed&&ed.k===k&&ed.n===n)return`<div class="lrow editing" style="--c:${ecol}"><div style="flex:1;min-width:0"><input id="en" value="${esc(n)}" maxlength="40">${sw(ecol,'se','pickE(IDX)')}<div class="acts2"><button class="btn2" onclick="ed=null;render()">取消</button><button class="btn2 okb" onclick="saveEdit()">儲存</button></div></div></div>`;
@@ -422,7 +429,7 @@ function saveSet(){S={...S,maker:+$('sm').value||0,taker:+$('st').value||0,lev:+
 function theme(){const e=document.documentElement,d=getComputedStyle(e).getPropertyValue('--bg').trim()==='#10161c';e.dataset.theme=d?'light':'dark'}
 
 const KD='takaMozeDraft_v1',nowStr=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16);
-const CONDS=[['日內偏見看多','L'],['日內偏見看空','S'],['馬刺做多','L'],['馬刺做空','S'],['馬克斯做多','L'],['馬克斯做空','S'],['3+1做多','L'],['3+1做空','S'],['突破壓力位且站穩做多','L'],['跌破支撐位且回測站不回上方做空','S'],['假跌破並且回測支撐位做多','L'],['假突破並且回測依然上不去做空','S'],['巨鯨建倉/平空','L'],['巨鯨建空/平多','S'],['1H/4H 趨勢偏多','L'],['1H/4H 趨勢偏空','S'],['5M進場','N'],['15M進場','N'],['5M量價背離','N'],['15M量價背離','N'],['1H量價背離','N'],['流動性攫取','N'],['成交量分布圖密集區','N'],['MMAR均線多頭排列回踩測試做多','L'],['MMAR均線空頭排列回踩測試做空','S'],['回踩失衡區FVG做多','L'],['回踩失衡區FVG做空','S'],['資金費率過負','L'],['資金費率過正','S'],['清算地圖上方空單累積待清算','L'],['清算地圖下方多單累積待清算','S'],['ICT做多','L'],['ICT做空','S'],['One Candle 做多','L'],['One Candle 做空','S'],['1M進場','N']];
+const CONDS=[['日內偏見看多','L'],['日內偏見看空','S'],['3+1做多','L'],['3+1做空','S'],['突破壓力位且站穩做多','L'],['跌破支撐位且回測站不回上方做空','S'],['假跌破並且回測支撐位做多','L'],['假突破並且回測依然上不去做空','S'],['1H/4H 趨勢偏多','L'],['1H/4H 趨勢偏空','S'],['5M進場','N'],['15M進場','N'],['MMAR均線多頭排列回踩測試做多','L'],['MMAR均線空頭排列回踩測試做空','S'],['回踩失衡區FVG做多','L'],['回踩失衡區FVG做空','S'],['清算地圖上方空單累積待清算','L'],['清算地圖下方多單累積待清算','S'],['ICT做多','L'],['ICT做空','S'],['One Candle 做多','L'],['One Candle 做空','S'],['1M進場','N']];
 const MOODS=['冷靜','猶豫','FOMO怕錯過','想追回虧損','心情差','心情好','測試方法'];
 const DOT={L:'var(--win)',S:'var(--loss)',N:'#e0a42e'};
 let fs={};
@@ -457,7 +464,7 @@ function openForm(id,useDraft){
 const opts=(a,v)=>a.map(x=>Array.isArray(x)?`<option value="${x[0]}" ${v===x[0]?'selected':''}>${x[1]}</option>`:`<option ${v===x?'selected':''}>${x}</option>`).join('');
 const code=()=>fs.dir==='Long'?'L':fs.dir==='Short'?'S':null;
 const allC=()=>[...CONDS.filter(a=>!(S.hid||[]).includes(a[0])),...(S.cc||[])].filter((a,i,r)=>r.findIndex(b=>b[0]===a[0])===i);
-function setDir(d){fs.dir=d;const c=code();fs.conds=fs.conds.filter(n=>{const x=allC().find(a=>a[0]===n);return x&&(x[1]===c||x[1]==='N')});sync()}
+function setDir(d){fs.dir=d;const c=code();fs.conds=fs.conds.filter(n=>{const x=allC().find(a=>a[0]===n);return !x||x[1]===c||x[1]==='N'});sync()}
 function sync(){
  $('bL').classList.toggle('on',fs.dir==='Long');$('bS').classList.toggle('on',fs.dir==='Short');
  ['none','fixed','pct'].forEach(m=>$('c_'+m).classList.toggle('on',fs.costMode===m));
@@ -466,9 +473,9 @@ function sync(){
 function tpsr(){$('tps').innerHTML=fs.tps.map((x,i)=>`<div class="tpr"><span>TP${i+1}</span><input class="tpi" data-i="${i}" type="number" step="any" value="${esc(x)}" inputmode="decimal">${i?`<button type="button" class="x" onclick="fs.tps.splice(${i},1);tpsr();prev()">✕</button>`:''}</div>`).join('')+(fs.tps.length<5?`<button type="button" class="lnk" onclick="fs.tps.push('');tpsr()">＋ 新增目標(至 TP5)</button>`:'')}
 function rc(){
  const c=code(),q=($('f_cs')?.value||'').toLowerCase(),list=allC().filter(a=>(!c||a[1]===c||a[1]==='N')&&a[0].toLowerCase().includes(q)).sort((x,y)=>(/^\d+M進場$/.test(y[0])?1:0)-(/^\d+M進場$/.test(x[0])?1:0));
- $('cc').innerHTML=list.map(a=>`<button type="button" data-c="${esc(a[0])}" class="${fs.conds.includes(a[0])?'on':''}"><i style="background:${clr(a)}"></i>${esc(a[0])}</button>`).join('')+(fs.addC?`<span class="addr"><input id="f_nc" placeholder="條件名稱"><button type="button" onclick="addC()">加入</button></span>`:`<button type="button" class="dash" onclick="fs.addC=1;rc()">＋ 新增進場條件</button>`);
+ $('cc').innerHTML=gp(list.concat(fs.conds.filter(n=>!allC().some(a=>a[0]===n)).map(n=>[n,'N'])),clr).map(g=>'<div class="cgrp">'+g.map(a=>`<button type="button" data-c="${esc(a[0])}" class="${fs.conds.includes(a[0])?'on':''}"><i style="background:${clr(a)}"></i>${esc(a[0])}</button>`).join('')+'</div>').join('')+(fs.addC?`<span class="addr"><input id="f_nc" placeholder="條件名稱"><button type="button" onclick="addC()">加入</button></span>`:`<button type="button" class="dash" onclick="fs.addC=1;rc()">＋ 新增進場條件</button>`);
  const ms=moodAll();
- $('mc').innerHTML=ms.map(m=>`<button type="button" data-m="${esc(m[0])}" class="${fs.moods.includes(m[0])?'on':''}"><i style="background:${m[1]}"></i>${esc(m[0])}</button>`).join('')+(fs.addM?`<span class="addr"><input id="f_nm" placeholder="情緒名稱"><button type="button" onclick="addM()">加入</button></span>`:`<button type="button" class="dash" onclick="fs.addM=1;rc()">＋ 新增情緒</button>`);
+ $('mc').innerHTML=gp(ms,m=>m[1]).map(g=>'<div class="cgrp">'+g.map(m=>`<button type="button" data-m="${esc(m[0])}" class="${fs.moods.includes(m[0])?'on':''}"><i style="background:${m[1]}"></i>${esc(m[0])}</button>`).join('')+'</div>').join('')+(fs.addM?`<span class="addr"><input id="f_nm" placeholder="情緒名稱"><button type="button" onclick="addM()">加入</button></span>`:`<button type="button" class="dash" onclick="fs.addM=1;rc()">＋ 新增情緒</button>`);
  $('mcnt').textContent='已選 '+fs.moods.length+'/3'}
 function addC(){const n=($('f_nc').value||'').trim();if(!n)return;if(!allC().some(a=>a[0]===n))S.cc=[...(S.cc||[]),[n,code()||'N']];if(!fs.conds.includes(n))fs.conds.push(n);fs.addC=0;save();rc();prev()}
 function addM(){const n=($('f_nm').value||'').trim();if(!n)return;if(!moodAll().some(x=>x[0]===n))S.cm=[...(S.cm||[]),[n,PAL[7]]];if(!fs.moods.includes(n)&&fs.moods.length<3)fs.moods.push(n);fs.addM=0;save();rc();prev()}
