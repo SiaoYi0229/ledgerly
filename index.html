@@ -156,6 +156,7 @@ input[type=datetime-local]::-webkit-date-and-time-value{text-align:left;min-widt
 .sheet .p{height:100%;max-height:none;border-radius:0;padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(28px + env(safe-area-inset-bottom,0px))}
 .stk{position:static;background:none;padding:18px 0 4px;margin-top:6px}
 .cgrp{flex:0 0 100%;display:flex;flex-wrap:wrap;gap:6px}#cc,#mc{gap:8px 6px}
+.symrow{display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}.symrow::-webkit-scrollbar{display:none}.symrow button{border:0;background:var(--chip);color:var(--tx);padding:6px 12px;border-radius:99px;font-size:13px;white-space:nowrap;flex:none}.symrow button.on{background:var(--ac);color:#fff}
 </style></head><body>
 <div id="app">
 <main id="main"></main>
@@ -169,18 +170,17 @@ input[type=datetime-local]::-webkit-date-and-time-value{text-align:left;min-widt
 const $=id=>document.getElementById(id);
 const K='takaMozeTrades_v1',KS='takaMozeSettings_v1';
 const D_PROF={name:'TAKA',ig:'',uid:'',email:'',tz:'Asia/Taipei',avatar:''};
-const D_CAL={weekly:true,mon:false,wkend:true,mc:true,yc:false},D_RULES={show:true,open:true,size:14,title:'交易規則',text:`
-1. 
-2. 
-3. 
-4. 
-5. 
-6. 
-7. 
-8. 
-9. 
-10. `};
-let rulesOpen=true,S={maker:.02,taker:.05,lev:10,eo:'taker',xo:'taker',cc:[],cm:[],cal:{...D_CAL},rules:{...D_RULES},prof:{...D_PROF},cap:300,risk:2,cur:'USDT',fx:32,feeMode:'pct',feeFixed:0,lang:'zh-TW',pin:'',hid:[],hidM:[]},T=null,tab='home',view='list',flt={q:'',side:'',res:'',tf:''},cm=new Date(2026,9,1),eid=null,dir='Long',dl=null;
+const D_CAL={weekly:true,mon:false,wkend:true,mc:true,yc:false},D_RULES={show:true,open:true,size:14,title:'交易規則',text:`1. 一天止盈2單就休息!!!
+2. 連續虧損2單就直接休息!!!
+3. 六日最好別手癢開單。
+4. 去健身房不要開單,沒一次成功的!!!
+5. 每日只做一個方向。
+6. 盡量只在16:00-21:00開單。
+7. 盈利超過1:1 還想繼續放要做保套。
+8. 單不超過12點,一定要手動平倉。
+9. 單筆交易最多2%定損,一天交易最多6%定損。
+10. 重大數據公佈前後不要進場,或是提前平倉。`};
+let rulesOpen=true,S={maker:.02,taker:.05,lev:150,eo:'taker',xo:'taker',cc:[],cm:[],cal:{...D_CAL},rules:{...D_RULES},prof:{...D_PROF},cap:300,risk:2,riskU:0,syms:[],cur:'USDT',fx:32,feeMode:'pct',feeFixed:0,lang:'zh-TW',pin:'',hid:[],hidM:[]},T=null,tab='home',view='list',flt={q:'',side:'',res:'',tf:''},cm=new Date(2026,9,1),eid=null,dir='Long',dl=null;
 const SEED=[
 ['2026-10-09T22:02','2026-10-09T23:10','BTCUSDT','Long','5m','3+1',112000,111550,1000,111550],
 ['2026-10-08T20:23','2026-10-08T21:40','BNBUSDT','Short','5m','ICT',1100,1060,2000,1089],
@@ -190,7 +190,7 @@ const SEED=[
 ['2026-10-05T09:30','2026-10-05T11:00','SOLUSDT','Long','5m','ICT',220,226,1200,214],
 ['2026-10-10T20:10','','ETHUSDT','Long','5m','3+1',4320,'',1000,4270]];
 const sample=()=>[];
-function load(){try{T=JSON.parse(localStorage.getItem(K)||'null')}catch{T=null}try{S={...S,...JSON.parse(localStorage.getItem(KS)||'{}')}}catch{}if(!Array.isArray(T))T=sample();T=T.filter(t=>!(/^s\d$/.test(t.id)&&SEED.some(a=>a[0]===t.entryDate&&a[2]===t.symbol&&+a[6]===+t.entryPrice)));S.cal={...D_CAL,...S.cal};S.rules={...D_RULES,...S.rules};S.prof={...D_PROF,...S.prof};fold()}
+function load(){try{T=JSON.parse(localStorage.getItem(K)||'null')}catch{T=null}try{S={...S,...JSON.parse(localStorage.getItem(KS)||'{}')}}catch{}if(!Array.isArray(T))T=sample();T=T.filter(t=>!(/^s\d$/.test(t.id)&&SEED.some(a=>a[0]===t.entryDate&&a[2]===t.symbol&&+a[6]===+t.entryPrice)));S.cal={...D_CAL,...S.cal};S.rules={...D_RULES,...S.rules};S.prof={...D_PROF,...S.prof};if(!S.levMig){S.lev=150;S.levMig=1}fold()}
 function fold(){
  S.hid=(S.hid||[]).filter(n=>CONDS.some(c=>c[0]===n));S.hidM=(S.hidM||[]).filter(n=>MOODS.includes(n));
  S.cc=(S.cc||[]).filter(x=>{const d=CONDS.find(c=>c[0]===x[0]);if(d&&(!x[2]||x[2]===clr([d[0],d[1]]))){S.hid=S.hid.filter(n=>n!==x[0]);return false}return true});
@@ -372,10 +372,10 @@ const isSysC=n=>CONDS.some(x=>x[0]===n)&&!(S.hid||[]).includes(n),isSysM=n=>MOOD
 const TZS=['Asia/Taipei','Asia/Hong_Kong','Asia/Shanghai','Asia/Tokyo','Asia/Seoul','Asia/Singapore','UTC','Europe/London','America/New_York','America/Los_Angeles'];
 const LANGS=[['zh-TW','繁體中文','zh-TW'],['zh-CN','简体中文','zh-CN'],['en','English','en']];
 const tradeSet=()=>{window._tsm=S.feeMode||'pct';const m=window._tsm,b=(k,l)=>`<button type="button" id="tm_${k}" class="${m===k?'on':''}" onclick="tsm('${k}')">${l}</button>`;
- return`<div class="card sec"><div class="fh"><span>設定預設本金與手續費,按儲存後才寫入。</span></div><label>本金(U)</label><input type="number" step="any" id="ts_cap" value="${S.cap}"><label>USDT → 台幣匯率</label><input type="number" step="any" id="ts_fx" value="${S.fx}"><small class="hint">總覽切換為 TWD 時使用。此頁面無法連網取得即時匯率,請手動更新。</small><label>單筆風險比例(%)</label><input type="number" step="any" id="ts_risk" value="${S.risk}"><small class="hint">新增交易時,依 本金 × 風險% ÷ 止損距離 自動算出倉位。</small><label>預設槓桿</label><input type="number" id="ts_lev" value="${S.lev}"><div class="fh" style="margin-top:16px"><span>交易成本</span></div><small class="hint">僅作為新增交易的預設值,每筆交易仍可個別修改。</small><label>預設手續費模式</label><div class="seg sm">${b('none','不自動計算')}${b('fixed','固定金額')}${b('pct','依成交金額百分比')}</div><div id="ts_pct" style="display:${m==='pct'?'':'none'}"><label>預設手續費率(%)</label><input type="number" step="any" id="ts_rate" value="${S.taker}"></div><div id="ts_fix" style="display:${m==='fixed'?'':'none'}"><label>預設固定手續費(U)</label><input type="number" step="any" id="ts_fixv" value="${S.feeFixed||''}"></div><div class="acts"><button class="ok" onclick="saveTrade()">儲存交易設定</button><button onclick="resetTrade()">↻ 重設</button></div></div>`};
+ return`<div class="card sec"><div class="fh"><span>設定預設本金與手續費,按儲存後才寫入。</span></div><label>本金(U)</label><input type="number" step="any" id="ts_cap" value="${S.cap}"><label>USDT → 台幣匯率</label><input type="number" step="any" id="ts_fx" value="${S.fx}"><small class="hint">總覽切換為 TWD 時使用。此頁面無法連網取得即時匯率,請手動更新。</small><label>預設單筆風險(U)</label><input type="number" step="any" id="ts_risk" value="${S.riskU||''}" placeholder="可留空"><small class="hint">新增交易時會自動帶入「風險」欄,再依止損距離算出實際部位。每筆都可以改。</small><label>預設槓桿</label><input type="number" id="ts_lev" value="${S.lev}"><div class="fh" style="margin-top:16px"><span>交易成本</span></div><small class="hint">僅作為新增交易的預設值,每筆交易仍可個別修改。</small><label>預設手續費模式</label><div class="seg sm">${b('none','不自動計算')}${b('fixed','固定金額')}${b('pct','依成交金額百分比')}</div><div id="ts_pct" style="display:${m==='pct'?'':'none'}"><label>預設手續費率(%)</label><input type="number" step="any" id="ts_rate" value="${S.taker}"></div><div id="ts_fix" style="display:${m==='fixed'?'':'none'}"><label>預設固定手續費(U)</label><input type="number" step="any" id="ts_fixv" value="${S.feeFixed||''}"></div><div class="acts"><button class="ok" onclick="saveTrade()">儲存交易設定</button><button onclick="resetTrade()">↻ 重設</button></div></div>`};
 function tsm(m){window._tsm=m;['none','fixed','pct'].forEach(k=>$('tm_'+k).classList.toggle('on',k===m));$('ts_pct').style.display=m==='pct'?'':'none';$('ts_fix').style.display=m==='fixed'?'':'none'}
-function saveTrade(){S.cap=+$('ts_cap').value||0;S.lev=+$('ts_lev').value||10;S.risk=+$('ts_risk').value||2;S.fx=+$('ts_fx').value||32;S.feeMode=window._tsm;S.taker=+$('ts_rate').value||0;S.feeFixed=+$('ts_fixv').value||0;save();toast('已儲存')}
-function resetTrade(){S.cap=300;S.risk=2;S.fx=32;S.lev=10;S.feeMode='pct';S.taker=.05;S.feeFixed=0;save();render();toast('已重設')}
+function saveTrade(){S.cap=+$('ts_cap').value||0;S.lev=+$('ts_lev').value||150;S.riskU=+$('ts_risk').value||0;S.fx=+$('ts_fx').value||32;S.feeMode=window._tsm;S.taker=+$('ts_rate').value||0;S.feeFixed=+$('ts_fixv').value||0;save();toast('已儲存')}
+function resetTrade(){S.cap=300;S.riskU=0;S.fx=32;S.lev=150;S.feeMode='pct';S.taker=.05;S.feeFixed=0;save();render();toast('已重設')}
 function listSet(k){
  const c=k==='cc',items=gp(c?allC():moodAll(),c?clr:(m=>m[1])).flat(),sys=n=>c?isSysC(n):isSysM(n),hid=((c?S.hid:S.hidM)||[]).filter(n=>c?CONDS.some(x=>x[0]===n):MOODS.includes(n));ncol=ncol||PAL[6];
  const sw=(cur,cls,fn)=>`<div class="sws">${PAL.map((x,i)=>`<button type="button" class="sw2 ${cls} ${x===cur?'on':''}" style="background:${x}" onclick="${fn}"></button>`.replace('IDX',i)).join('')}</div>`;
@@ -413,7 +413,10 @@ const impSet=()=>`<div class="card sec"><small>支援 CSV 或 JSON 備份</small
 const expSet=()=>`<div class="card sec"><small>${T.length} 筆交易(截圖不含在備份內)</small><button class="btn" onclick="exportCsv()">下載 CSV</button><button class="btn" onclick="exportJson()">下載 JSON 備份</button></div>`;
 const aboutSet=()=>`<div class="card sec"><small>Ledgerly · v1.0</small><p class="note">資料保存在此瀏覽器,不會自動上傳。BingX 永續合約依倉位名義價值與費率估算手續費;槓桿只用於估算保證金,不放大損益。</p></div><div class="card sec"><div class="fh"><span>App 圖示</span></div><div class="pfr"><img src="icon-180.png" style="width:64px;height:64px;border-radius:15px"><small class="hint">黑底白色圖示。用 Safari 的「加入主畫面」會自動使用。</small></div><button class="btn" onclick="dlIcon()">下載 App 圖示(PNG)</button></div>`;
 async function dlIcon(){try{const b=await (await fetch('icon-512.png')).blob();await dlf('ledgerly-icon.png',b)}catch{const a=document.createElement('a');a.href='icon-512.png';a.download='ledgerly-icon.png';document.body.appendChild(a);a.click();a.remove()}}
-const SUBS={profile:['個人資料',profSet],trade:['交易設定',tradeSet],conds:['進場條件',()=>listSet('cc')],moods:['開單狀態管理',()=>listSet('cm')],imp:['資料匯入',impSet],exp:['資料匯出',expSet],cal:['日曆顯示設定',calSet],rules:['首頁交易規則備忘設定',rulesSet],lang:['語言設定',langSet],sec:['安全設定',secSet],about:['關於我們',aboutSet]};
+const symSet=()=>`<div class="card sec"><div class="fh"><span>新增交易時可點選的幣種。你輸入過的新幣種會自動加到這裡。</span><span class="cnt">${allSyms().length} 項</span></div><div class="ch3">我加入的</div>${(S.syms||[]).map(x=>`<div class="trow"><span>${esc(x)}</span><button class="x" data-n="${esc(x)}" onclick="delSym(this.dataset.n)">🗑</button></div>`).join('')||'<small class="hint">尚未加入。在新增交易輸入新幣種並存檔後,會自動出現在這裡。</small>'}<div class="addrow"><input id="ns" placeholder="輸入幣種,例如 PEPEUSDT" autocapitalize="characters"><button class="btn ok" style="margin:0;width:auto;flex:none;padding:11px 16px" onclick="addSym()">加入</button></div><div class="ch3" style="margin-top:16px">內建常用</div><div class="chips">${SYMS.map(x=>`<span class="bdg">${esc(x)}</span>`).join('')}</div></div>`;
+function addSym(){const n=normSym($('ns').value);if(!n)return;if(!allSyms().includes(n))S.syms=[n,...(S.syms||[])];save();render()}
+function delSym(n){S.syms=(S.syms||[]).filter(x=>x!==n);save();render()}
+const SUBS={profile:['個人資料',profSet],trade:['交易設定',tradeSet],syms:['常用商品',symSet],conds:['進場條件',()=>listSet('cc')],moods:['開單狀態管理',()=>listSet('cm')],imp:['資料匯入',impSet],exp:['資料匯出',expSet],cal:['日曆顯示設定',calSet],rules:['首頁交易規則備忘設定',rulesSet],lang:['語言設定',langSet],sec:['安全設定',secSet],about:['關於我們',aboutSet]};
 const curTheme=()=>document.documentElement.dataset.theme||(typeof matchMedia!=='undefined'&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
 function setTheme(m){document.documentElement.dataset.theme=m;render()}
 const row=(ic,t,st,val,go)=>`<div class="srow" onclick="${go}"><div class="si">${ic}</div><div class="sx"><b>${t}</b>${st?`<small>${st}</small>`:''}</div>${val?`<span class="sv">${val}</span>`:''}<span class="ch2">›</span></div>`;
@@ -422,13 +425,16 @@ function set(){
  const g=(t,b)=>`<div class="gh">${t}</div><div class="card">${b}</div>`,go=k=>`sub='${k}';render();$('main').scrollTop=0`,th=curTheme(),p=S.prof,ln=LANGS.find(l=>l[0]===S.lang)||LANGS[0];
  return head('設定','個人化與資料管理')
  +`<div class="card pf" onclick="${go('profile')}" style="cursor:pointer"><div class="av">${p.avatar?`<img src="${p.avatar}">`:esc((p.name||'T')[0])}</div><div style="flex:1;min-width:0"><b>${esc(p.name||'TAKA')}</b><small>${esc(p.email||'資料保存在此瀏覽器')}</small></div><span class="ch2">›</span></div>`
- +g('輸入設定',row('✨','交易設定','本金與交易偏好',S.cap+' U',go('trade'))+row('✏️','進場條件','新增交易時使用的條件',allC().length+' 項',go('conds'))+row('🧠','開單狀態管理','交易當下的心理狀態',moodAll().length+' 項',go('moods')))
+ +g('輸入設定',row('✨','交易設定','本金與交易偏好',S.cap+' U',go('trade'))+row('🪙','常用商品','幣種快速選單',allSyms().length+' 項',go('syms'))+row('✏️','進場條件','新增交易時使用的條件',allC().length+' 項',go('conds'))+row('🧠','開單狀態管理','交易當下的心理狀態',moodAll().length+' 項',go('moods')))
  +g('數據',row('📥','資料匯入','CSV / JSON 備份','',go('imp'))+row('📤','資料匯出','CSV 與 JSON 備份',T.length+' 筆',go('exp')))
  +g('基本設定',row('📅','日曆顯示設定','每週合計、週末、損益曲線','',go('cal'))+row('📌','首頁交易規則備忘設定','規則內容與字體','',go('rules'))+`<div class="srow" style="cursor:default"><div class="si">🎨</div><div class="sx"><b>外觀模式</b><small>深色 / 淺色</small></div><div class="mseg"><button class="${th==='light'?'on':''}" onclick="setTheme('light')">☀️</button><button class="${th==='dark'?'on':''}" onclick="setTheme('dark')">🌙</button></div></div>`+row('🌐','語言設定','繁中 / 簡中 / EN',ln[1],go('lang'))+row('🛡️','安全設定','PIN 密碼鎖',S.pin?'已啟用':'未設定',go('sec'))+row('ℹ️','關於我們','版本與說明','1.0',go('about')))
  +`<div class="card" style="margin-top:14px"><div class="srow" onclick="if(confirm('確定清除全部交易?')){T=[];save();render()}"><div class="si">🗑️</div><div class="sx"><b class="neg">清除所有交易資料</b></div></div></div>`}
 function saveSet(){S={...S,maker:+$('sm').value||0,taker:+$('st').value||0,lev:+$('sl').value||10,eo:$('se').value,xo:$('sx').value};save();toast('已儲存')}
 function theme(){const e=document.documentElement,d=getComputedStyle(e).getPropertyValue('--bg').trim()==='#10161c';e.dataset.theme=d?'light':'dark'}
 
+const SYMS=['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','DOGEUSDT','ADAUSDT','AVAXUSDT','LINKUSDT','TRXUSDT','LTCUSDT','DOTUSDT','SUIUSDT','HYPEUSDT','TONUSDT','OIL WTI'];
+const allSyms=()=>[...(S.syms||[]),...SYMS].filter((a,i,r)=>r.indexOf(a)===i);
+const normSym=v=>{const u=(v||'').trim().toUpperCase().replace(/\s+/g,' ');if(!u)return'';const L=allSyms();return L.includes(u)?u:(L.find(x=>x===u+'USDT')||u)};
 const KD='takaMozeDraft_v1',nowStr=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16);
 const CONDS=[['日內偏見看多','L'],['日內偏見看空','S'],['3+1做多','L'],['3+1做空','S'],['突破壓力位且站穩做多','L'],['跌破支撐位且回測站不回上方做空','S'],['假跌破並且回測支撐位做多','L'],['假突破並且回測依然上不去做空','S'],['1H/4H 趨勢偏多','L'],['1H/4H 趨勢偏空','S'],['5M進場','N'],['15M進場','N'],['MMAR均線多頭排列回踩測試做多','L'],['MMAR均線空頭排列回踩測試做空','S'],['回踩失衡區FVG做多','L'],['回踩失衡區FVG做空','S'],['清算地圖上方空單累積待清算','L'],['清算地圖下方多單累積待清算','S'],['ICT做多','L'],['ICT做空','S'],['One Candle 做多','L'],['One Candle 做空','S'],['1M進場','N']];
 const MOODS=['冷靜','猶豫','FOMO怕錯過','想追回虧損','心情差','心情好','測試方法'];
@@ -439,7 +445,7 @@ const draft=()=>{try{return JSON.parse(localStorage.getItem(KD)||'null')}catch{r
 const sec=(h,b,s='')=>`<div class="fc">${h?`<div class="fh"><span>${h}</span><small>${s}</small></div>`:''}${b}</div>`;
 function openForm(id,useDraft){
  eid=id||null;
- const base={entryDate:nowStr(),tf:'5m',leverage:S.lev,feeMode:S.feeMode||'pct',feeRate:S.taker,fees:S.feeFixed||'',amtMode:'margin',fundingFee:0};
+ const base={entryDate:nowStr(),tf:'5m',leverage:S.lev,feeMode:S.feeMode||'pct',feeRate:S.taker,fees:S.feeFixed||'',fundingFee:0,...(S.riskU>0?{src:'risk',pv:S.riskU}:{})};
  const t=(id?T.find(x=>x.id===id):useDraft?draft():null)||base,q=qty(t),v=k=>esc(t[k]??''),lev=+t.leverage||1;
  fs={dir:t.side||null,costMode:t.feeMode==='none'?'none':(t.feeMode==='fixed'||t.feeMode==='manual')?'fixed':'pct',closed:t.closed??isC(t),tps:t.tps&&t.tps.length?[...t.tps]:t.takeProfit?[t.takeProfit]:[''],conds:[...(t.conds||[])],moods:[...(t.moods||[])],addC:0,addM:0,ff:t.fundingFee||0,tf0:t.tf||'',tvu:null};
  if(!fs.moods.length&&t.discipline)fs.moods=[t.discipline];
@@ -447,8 +453,8 @@ function openForm(id,useDraft){
  const fr=t.feeRate!=null&&t.feeRate!==''?t.feeRate:S.taker;
  const bn=!id&&!useDraft&&draft()?`<div class="fc bn"><span>回復上次未完成的紀錄?</span><span><b onclick="openForm(null,true)">回復</b><b style="color:var(--sub)" onclick="try{localStorage.removeItem(KD)}catch{};openForm()">捨棄</b></span></div>`:'';
  $('form').innerHTML=`<div class="fhd"><div><small>NEW TRADE</small><h2>${id?'編輯交易':'記一筆交易'}</h2></div><button class="ib" type="button" onclick="closeForm()">✕</button></div>${bn}
- ${sec('',`<label>選擇商品</label><input id="f_sym" list="syms" value="${v('symbol')}" placeholder="BTCUSDT" autocapitalize="characters"><datalist id="syms">${['BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','HYPEUSDT','XRPUSDT','DOGEUSDT','OIL WTI'].map(x=>`<option>${x}</option>`).join('')}</datalist><label>進場時間</label><input type="datetime-local" id="f_ed" value="${v('entryDate')}"><label>方向(必填,無預設)</label><div class="seg"><button class="L" id="bL" type="button" onclick="setDir('Long')">做多</button><button class="S" id="bS" type="button" onclick="setDir('Short')">做空</button></div>`)}
- ${sec('',`<div class="g"><div><label>進場價</label><input type="number" step="any" id="f_ep" value="${v('entryPrice')}" inputmode="decimal"></div><div><label>止損價</label><input type="number" step="any" id="f_sl" value="${v('stopLoss')}" inputmode="decimal"></div></div>`)}
+ ${sec('',`<label>選擇商品</label><input id="f_sym" list="syms" value="${v('symbol')}" placeholder="BTCUSDT" autocapitalize="characters"><datalist id="syms">${allSyms().map(x=>`<option>${esc(x)}</option>`).join('')}</datalist><div class="symrow" id="symc"></div><label>進場時間</label><input type="datetime-local" id="f_ed" value="${v('entryDate')}"><label>方向(必填,無預設)</label><div class="seg"><button class="L" id="bL" type="button" onclick="setDir('Long')">做多</button><button class="S" id="bS" type="button" onclick="setDir('Short')">做空</button></div>`)}
+ ${sec('',`<div class="g"><div><label>進場價</label><input type="number" step="any" id="f_ep" value="${v('entryPrice')}" inputmode="decimal"></div><div><label>止損價</label><input type="number" step="any" id="f_sl" value="${v('stopLoss')}" inputmode="decimal"></div></div><label>風險(U)・這筆最多虧多少</label><input type="number" step="any" id="f_rk" inputmode="decimal" placeholder="例如 10U">`)}
  ${sec('槓桿',`<div class="lev"><input type="range" min="1" max="1000" id="f_levr" value="${lev}"><input type="number" min="1" max="1000" id="f_lev" value="${lev}"></div>`,'1x–1000x,只影響預估保證金')}
  ${sec('實際部位',`<div class="g3"><div><label>保證金(U)</label><input type="number" step="any" id="f_mg" inputmode="decimal"></div><div><label>交易額(U)</label><input type="number" step="any" id="f_nt" inputmode="decimal"></div><div><label>數量 / 幣數</label><input type="number" step="any" id="f_qt" inputmode="decimal"></div></div><div id="amh" class="hint" style="margin-top:8px"></div>`,'填任一項,其餘自動換算')}
  ${sec('計算摘要','<div id="pv"></div>')}
@@ -460,11 +466,12 @@ function openForm(id,useDraft){
  ${sec('TradingView 圖表快照(選填)',`<input id="f_tv" type="url" inputmode="url" placeholder="https://www.tradingview.com/x/…" value="${v('tv')}"><div id="tvp" style="margin-top:8px"></div><small class="hint">在 TradingView 圖表按相機圖示 → 複製連結,貼在這裡。</small>`)}
  <details class="fc"><summary>更多選項</summary><div class="g"><div class="f"><label>市場狀態</label><select id="f_ms">${opts([['','未標記'],'趨勢','盤整','突破','反轉','高波動'],t.marketState||'')}</select></div><div class="f"><label>進場理由 / 交易計畫</label><textarea id="f_su" rows="2">${v('setup')}</textarea></div><div class="f"><label>出場檢討 / 心得</label><textarea id="f_no" rows="2">${v('notes')}</textarea></div></div></details>
  <div class="stk">${id?'<button class="del" type="button" onclick="delT()">刪除</button>':''}<button type="button" onclick="closeForm()">取消</button><button class="ok" id="ok" type="button" onclick="saveT()">完成紀錄</button></div>`;
- {const sid={margin:'f_mg',notional:'f_nt',qty:'f_qt'}[fs.src];if(sid)$(sid).value=fs.pv??''}
- sync();$('sheet').classList.add('show');$('form').scrollTop=0}
+ {const sid={risk:'f_rk',margin:'f_mg',notional:'f_nt',qty:'f_qt'}[fs.src];if(sid)$(sid).value=fs.pv??''}
+ sync();symr();$('sheet').classList.add('show');$('form').scrollTop=0}
 const opts=(a,v)=>a.map(x=>Array.isArray(x)?`<option value="${x[0]}" ${v===x[0]?'selected':''}>${x[1]}</option>`:`<option ${v===x?'selected':''}>${x}</option>`).join('');
 const code=()=>fs.dir==='Long'?'L':fs.dir==='Short'?'S':null;
 const allC=()=>[...CONDS.filter(a=>!(S.hid||[]).includes(a[0])),...(S.cc||[])].filter((a,i,r)=>r.findIndex(b=>b[0]===a[0])===i);
+function symr(){const cur=normSym($('f_sym').value);$('symc').innerHTML=allSyms().map(x=>`<button type="button" data-s="${esc(x)}" class="${cur===x?'on':''}">${esc(x.replace(/USDT$/,''))}</button>`).join('')}
 function setDir(d){fs.dir=d;const c=code();fs.conds=fs.conds.filter(n=>{const x=allC().find(a=>a[0]===n);return !x||x[1]===c||x[1]==='N'});sync()}
 function sync(){
  $('bL').classList.toggle('on',fs.dir==='Long');$('bS').classList.toggle('on',fs.dir==='Short');
@@ -482,14 +489,13 @@ function addC(){const n=($('f_nc').value||'').trim();if(!n)return;if(!allC().som
 function addM(){const n=($('f_nm').value||'').trim();if(!n)return;if(!moodAll().some(x=>x[0]===n))S.cm=[...(S.cm||[]),[n,PAL[7]]];if(!fs.moods.includes(n)&&fs.moods.length<3)fs.moods.push(n);fs.addM=0;save();rc();prev()}
 function read(){
  const g=k=>$('f_'+k)?.value??'',lev=+g('lev')||1,nt=+g('nt')||0,qt=+g('qt')||0,sx=fs.src==='auto'?'notional':fs.src,tps=fs.tps.filter(x=>x!==''&&x!=null);
- return{id:eid||'t'+Date.now(),symbol:g('sym').trim().toUpperCase(),side:fs.dir,entryPrice:g('ep'),stopLoss:g('sl'),leverage:lev,sizeMode:sx==='qty'?'quantity':'notional',positionSize:nt?+nt.toFixed(6):'',quantity:sx==='qty'&&qt?qt:'',src:sx,pv:sx==='margin'?g('mg'):sx==='qty'?g('qt'):g('nt'),tps,takeProfit:tps[0]||'',tpLevel:tps.length?'TP1':'',feeMode:fs.costMode,fees:g('fixed'),feeRate:g('rate'),fundingFee:fs.ff||0,conds:fs.conds,strategy:fs.conds[0]||'',moods:fs.moods,discipline:fs.moods.join('、'),closed:fs.closed,entryDate:g('ed')||nowStr(),exitPrice:fs.closed?g('xp'):'',exitDate:fs.closed?(g('xd')||nowStr()):'',tf:((fs.conds.find(c=>/^\d+M進場$/.test(c))||'').toLowerCase())||fs.tf0||'',marketState:g('ms'),setup:g('su'),notes:g('no'),tv:g('tv').trim()}}
+ return{id:eid||'t'+Date.now(),symbol:normSym(g('sym')),side:fs.dir,entryPrice:g('ep'),stopLoss:g('sl'),leverage:lev,sizeMode:sx==='qty'?'quantity':'notional',positionSize:nt?+nt.toFixed(6):'',quantity:sx==='qty'&&qt?qt:'',src:sx,pv:sx==='risk'?g('rk'):sx==='margin'?g('mg'):sx==='qty'?g('qt'):g('nt'),tps,takeProfit:tps[0]||'',tpLevel:tps.length?'TP1':'',feeMode:fs.costMode,fees:g('fixed'),feeRate:g('rate'),fundingFee:fs.ff||0,conds:fs.conds,strategy:fs.conds[0]||'',moods:fs.moods,discipline:fs.moods.join('、'),closed:fs.closed,entryDate:g('ed')||nowStr(),exitPrice:fs.closed?g('xp'):'',exitDate:fs.closed?(g('xd')||nowStr()):'',tf:((fs.conds.find(c=>/^\d+M進場$/.test(c))||'').toLowerCase())||fs.tf0||'',marketState:g('ms'),setup:g('su'),notes:g('no'),tv:g('tv').trim()}}
 function tvImg(u){u=(u||'').trim();if(!/^https:\/\//i.test(u))return'';const m=u.match(/tradingview\.com\/x\/([A-Za-z0-9]+)/i);if(m)return'https://s3.tradingview.com/snapshots/'+m[1][0].toLowerCase()+'/'+m[1]+'.png';return/\.(png|jpe?g|webp)(\?.*)?$/i.test(u)?u:''}
 function calcPos(){
- const ep=+$('f_ep').value,sl=+$('f_sl').value,lev=+$('f_lev').value||1,src=fs.src,ids={margin:'f_mg',notional:'f_nt',qty:'f_qt'},slOk=!(sl>0)||!fs.dir||(fs.dir==='Long'?sl<ep:sl>ep);
+ const ep=+$('f_ep').value,sl=+$('f_sl').value,lev=+$('f_lev').value||1,src=fs.src,ids={risk:'f_rk',margin:'f_mg',notional:'f_nt',qty:'f_qt'},slOk=!(sl>0)||!fs.dir||(fs.dir==='Long'?sl<ep:sl>ep),dist=ep>0&&sl>0&&ep!==sl&&slOk?Math.abs(ep-sl)/ep:null;
  let nt=null;
- if(src==='auto'){if(ep>0&&sl>0&&ep!==sl&&slOk&&+S.cap>0&&+S.risk>0)nt=S.cap*S.risk/100/(Math.abs(ep-sl)/ep)}
- else{const v=+$(ids[src]).value;if(v>0)nt=src==='margin'?v*lev:src==='notional'?v:ep>0?v*ep:null}
- const out={f_mg:nt==null?'':+(nt/lev).toFixed(2),f_nt:nt==null?'':+nt.toFixed(2),f_qt:nt==null||!(ep>0)?'':+(nt/ep).toPrecision(6)};
+ if(ids[src]){const v=+$(ids[src]).value;if(v>0){if(src==='risk')nt=dist?v/dist:null;else if(src==='margin')nt=v*lev;else if(src==='notional')nt=v;else nt=ep>0?v*ep:null}}
+ const out={f_rk:nt==null||!dist?'':+(nt*dist).toFixed(2),f_mg:nt==null?'':+(nt/lev).toFixed(2),f_nt:nt==null?'':+nt.toFixed(2),f_qt:nt==null||!(ep>0)?'':+(nt/ep).toPrecision(6)};
  Object.keys(out).forEach(k=>{if(k!==ids[src])$(k).value=out[k]})}
 function prev(){
  calcPos();const t=read(),q=qty(t),nt=+t.positionSize||0,rk=risk(t),p=pnl(t),ep=+t.entryPrice,row=(a,b,c='')=>`<div class="kv"><span>${a}</span><span class="${c}">${b}</span></div>`;
@@ -499,25 +505,29 @@ function prev(){
  if(nt&&t.feeMode!=='none')h+=row('預估手續費',fmt(fee(t)));
  if(p!=null)h+=row('扣費後損益',fmt(p),sg(p))+(rm(t)!=null?row('R 倍數',rm(t).toFixed(2)+'R',sg(p)):'');
  $('pv').innerHTML=h+wn+(nt?'':'<small class="hint">設定保證金或交易額後,才會計算風險與交易成本</small>');
- const ok=t.symbol&&t.side&&ep>0;$('ok').disabled=!ok;{const L={margin:'保證金',notional:'交易額',qty:'數量/幣數'},mk={margin:'mg',notional:'nt',qty:'qt'}[fs.src];['mg','nt','qt'].forEach(k=>$('f_'+k).classList.toggle('man',k===mk));
-  $('amh').innerHTML=fs.src==='auto'?(+$('f_ep').value>0&&+$('f_sl').value>0?'✓ 依止損自動計算(本金 '+S.cap+' U × 風險 '+S.risk+'%),也可直接在任一欄手動輸入':'輸入進場價與止損價後,依本金 × 風險 '+S.risk+'% 自動計算;或直接在任一欄手動輸入'):'以「'+L[fs.src]+'」為準,其餘自動換算 · <button type="button" class="lnk" onclick="fs.src=\'auto\';prev()">↻ 依風險自動計算</button>'}
+ const ok=t.symbol&&t.side&&ep>0;$('ok').disabled=!ok;{const L={risk:'風險',margin:'保證金',notional:'交易額',qty:'數量/幣數'},mk={risk:'rk',margin:'mg',notional:'nt',qty:'qt'}[fs.src];['rk','mg','nt','qt'].forEach(k=>$('f_'+k).classList.toggle('man',k===mk));
+  const hasSL=+$('f_ep').value>0&&+$('f_sl').value>0;
+  $('amh').innerHTML=fs.src==='risk'?(hasSL?'✓ 依風險 '+($('f_rk').value||0)+' U 與止損距離自動算出實際部位':'輸入進場價與止損價後,依風險自動算出實際部位'):fs.src==='auto'?'填「風險(U)」+ 進場價與止損價,系統會自動算出實際部位;也可以直接在任一欄手動輸入':'以「'+L[fs.src]+'」為準,其餘自動換算'+(+$('f_rk').value>0&&fs.src!=='risk'?' · <button type="button" class="lnk" onclick="fs.src=\'risk\';prev()">↻ 改以風險計算</button>':'')}
  {const u=tvImg(t.tv);if(u!==fs.tvu){fs.tvu=u;$('tvp').innerHTML=u?`<a href="${esc(t.tv)}" target="_blank" rel="noopener noreferrer"><img src="${esc(u)}" alt="TradingView 快照" referrerpolicy="no-referrer" onerror="this.outerHTML='<small class=hint>預覽載入失敗(此環境可能封鎖外部圖片),請點下方連結開啟</small>'"></a><a class="lnk" href="${esc(t.tv)}" target="_blank" rel="noopener noreferrer">↗ 開啟快照</a>`:(t.tv?'<small class="hint">無法辨識的連結格式,仍會一併儲存</small>':'')}}
  if(!eid&&(t.symbol||t.entryPrice)){try{localStorage.setItem(KD,JSON.stringify(t))}catch{}}}
 function saveT(){const t=read();if(!t.symbol||!t.side||!(+t.entryPrice>0)){toast('請填商品、方向與進場價');return}
  if(t.closed&&!(+t.exitPrice>0)){toast('已平倉請填出場價');return}
  {const ep=+t.entryPrice,sl=+t.stopLoss;if(sl>0&&(t.side==='Long'?sl>=ep:sl<=ep)){toast(t.side==='Long'?'做多的止損價需低於進場價':'做空的止損價需高於進場價');return}}
  if(eid)T=T.map(x=>x.id===eid?t:x);else T.unshift(t);
+ {const s0=t.symbol;if(s0&&!SYMS.includes(s0))S.syms=[s0,...(S.syms||[]).filter(x=>x!==s0)]}
  try{localStorage.removeItem(KD)}catch{}save();closeForm();if(tab!=='rec')setTab('rec');else render();toast('已儲存')}
 function delT(){if(confirm('刪除這筆交易?')){T=T.filter(x=>x.id!==eid);save();closeForm();render()}}
 function closeForm(){$('sheet').classList.remove('show')}
-$('form').addEventListener('click',e=>{const b=e.target.closest('button[data-c],button[data-m]');if(!b)return;
+$('form').addEventListener('click',e=>{const b=e.target.closest('button[data-c],button[data-m],button[data-s]');if(!b)return;
+ if(b.dataset.s){$('f_sym').value=b.dataset.s;symr();prev();return}
  if(b.dataset.c){const n=b.dataset.c,i=fs.conds.indexOf(n);i<0?fs.conds.push(n):fs.conds.splice(i,1)}
  else{const n=b.dataset.m,i=fs.moods.indexOf(n);if(i>=0)fs.moods.splice(i,1);else if(fs.moods.length<3)fs.moods.push(n);else toast('最多選 3 個')}
  rc();prev()});
-$('form').addEventListener('input',e=>{const i=e.target;{const sm={f_mg:'margin',f_nt:'notional',f_qt:'qty'};if(sm[i.id])fs.src=i.value===''?'auto':sm[i.id]}
+$('form').addEventListener('input',e=>{const i=e.target;{const sm={f_rk:'risk',f_mg:'margin',f_nt:'notional',f_qt:'qty'};if(sm[i.id])fs.src=i.value===''?'auto':sm[i.id]}
  if(i.id==='f_levr')$('f_lev').value=i.value;
  if(i.id==='f_lev')$('f_levr').value=Math.min(1000,Math.max(1,i.value||1));
  if(i.classList&&i.classList.contains('tpi'))fs.tps[+i.dataset.i]=i.value;
+ if(i.id==='f_sym')symr();
  if(i.id==='f_cs'){rc();return}
  if(i.id==='f_closed'){fs.closed=i.checked;sync();return}
  prev()});
