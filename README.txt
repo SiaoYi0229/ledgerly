@@ -29,4 +29,4 @@ iPhone 加到主畫面
 
 之後要更新
   直接把新的 index.html 覆蓋上傳。若畫面沒更新,把 sw.js 裡的
-  ledgerly-v11 改成 ledgerly-v12 再上傳即可。
+  ledgerly-v12 改成 ledgerly-v13 再上傳即可。

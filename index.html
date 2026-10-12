@@ -169,17 +169,16 @@ input[type=datetime-local]::-webkit-date-and-time-value{text-align:left;min-widt
 const $=id=>document.getElementById(id);
 const K='takaMozeTrades_v1',KS='takaMozeSettings_v1';
 const D_PROF={name:'TAKA',ig:'',uid:'',email:'',tz:'Asia/Taipei',avatar:''};
-const D_CAL={weekly:true,mon:false,wkend:true,mc:true,yc:false},D_RULES={show:true,open:true,size:14,title:'交易規則',text:`
-1.
-2. 
-3. 
-4. 
-5. 
-6. 
-7. 
-8. 
-9. 
-10. `};
+const D_CAL={weekly:true,mon:false,wkend:true,mc:true,yc:false},D_RULES={show:true,open:true,size:14,title:'交易規則',text:`1. 一天止盈2單就休息!!!
+2. 連續虧損2單就直接休息!!!
+3. 六日最好別手癢開單。
+4. 去健身房不要開單,沒一次成功的!!!
+5. 每日只做一個方向。
+6. 盡量只在16:00-21:00開單。
+7. 盈利超過1:1 還想繼續放要做保套。
+8. 單不超過12點,一定要手動平倉。
+9. 單筆交易最多2%定損,一天交易最多6%定損。
+10. 重大數據公佈前後不要進場,或是提前平倉。`};
 let rulesOpen=true,S={maker:.02,taker:.05,lev:10,eo:'taker',xo:'taker',cc:[],cm:[],cal:{...D_CAL},rules:{...D_RULES},prof:{...D_PROF},cap:300,risk:2,cur:'USDT',fx:32,feeMode:'pct',feeFixed:0,lang:'zh-TW',pin:'',hid:[],hidM:[]},T=null,tab='home',view='list',flt={q:'',side:'',res:'',tf:''},cm=new Date(2026,9,1),eid=null,dir='Long',dl=null;
 const SEED=[
 ['2026-10-09T22:02','2026-10-09T23:10','BTCUSDT','Long','5m','3+1',112000,111550,1000,111550],
@@ -189,8 +188,8 @@ const SEED=[
 ['2026-10-06T14:40','2026-10-06T15:20','HYPEUSDT','Short','15m','OCZ',45,46,800,46],
 ['2026-10-05T09:30','2026-10-05T11:00','SOLUSDT','Long','5m','ICT',220,226,1200,214],
 ['2026-10-10T20:10','','ETHUSDT','Long','5m','3+1',4320,'',1000,4270]];
-const sample=()=>SEED.map((a,i)=>({id:'s'+i,entryDate:a[0],exitDate:a[1],symbol:a[2],side:a[3],tf:a[4],strategy:a[5],entryPrice:a[6],exitPrice:a[7],sizeMode:'notional',positionSize:a[8],quantity:'',leverage:10,eo:'taker',xo:'taker',feeMode:'auto',fees:0,fundingFee:0,stopLoss:a[9],tpLevel:'',takeProfit:'',discipline:'',marketState:'',setup:'',notes:''}));
-function load(){try{T=JSON.parse(localStorage.getItem(K)||'null')}catch{T=null}try{S={...S,...JSON.parse(localStorage.getItem(KS)||'{}')}}catch{}if(!Array.isArray(T))T=sample();S.cal={...D_CAL,...S.cal};S.rules={...D_RULES,...S.rules};S.prof={...D_PROF,...S.prof};fold()}
+const sample=()=>[];
+function load(){try{T=JSON.parse(localStorage.getItem(K)||'null')}catch{T=null}try{S={...S,...JSON.parse(localStorage.getItem(KS)||'{}')}}catch{}if(!Array.isArray(T))T=sample();T=T.filter(t=>!(/^s\d$/.test(t.id)&&SEED.some(a=>a[0]===t.entryDate&&a[2]===t.symbol&&+a[6]===+t.entryPrice)));S.cal={...D_CAL,...S.cal};S.rules={...D_RULES,...S.rules};S.prof={...D_PROF,...S.prof};fold()}
 function fold(){
  S.hid=(S.hid||[]).filter(n=>CONDS.some(c=>c[0]===n));S.hidM=(S.hidM||[]).filter(n=>MOODS.includes(n));
  S.cc=(S.cc||[]).filter(x=>{const d=CONDS.find(c=>c[0]===x[0]);if(d&&(!x[2]||x[2]===clr([d[0],d[1]]))){S.hid=S.hid.filter(n=>n!==x[0]);return false}return true});
@@ -249,7 +248,7 @@ function rec(){
  h+=`<input placeholder="🔍 搜尋幣種 / 策略" value="${esc(flt.q)}" oninput="flt.q=this.value;clearTimeout(window._d);window._d=setTimeout(()=>{render();const i=document.querySelector('main input');i.focus();i.setSelectionRange(99,99)},250)" style="margin-top:12px"><div class="tabs">${sel('side',[['','所有方向'],['Long','做多'],['Short','做空']])}${sel('res',[['','所有結果'],['win','獲利'],['loss','虧損'],['open','未平倉']])}${sel('tf',[['','所有週期'],['1m','1m'],['3m','3m'],['5m','5m'],['15m','15m'],['Other','Other']])}</div>`;
  [...new Set(l.map(day))].forEach(d=>{const g=l.filter(t=>day(t)===d),gp=sum(g.map(t=>pnl(t)||0));
   h+=`<div class="day"><span>${dlabel(d)}</span><span class="${sg(gp)}">${g.length} 筆 · ${fmt(gp)}</span></div><div class="card">`+g.map(t=>{const p=pnl(t),r=rm(t);return `<div class="it" onclick="openForm('${t.id}')">${ico(t.symbol)}<div class="m"><b>${esc(t.symbol)}</b><span class="tag ${t.side==='Long'?'long':'short'}">${t.side==='Long'?'做多':'做空'}</span>${p==null?'<span class="tag opn">未平倉</span>':''}<small>${t.entryDate.slice(11,16)} · ${esc(t.tf)} · ${esc(lab(t))}${(t.moods||[]).length?' · '+esc(t.moods.join('、')):''}${t.tv?' · 📷':''}</small></div><div class="r ${sg(p)}">${p==null?'—':fmt(p)}<small>${r==null?'':(r>0?'+':'')+r.toFixed(2)+'R'}</small></div></div>`}).join('')+'</div>'});
- return h+(l.length?'':'<p style="text-align:center;color:var(--sub);margin-top:40px">沒有符合的交易</p>')}
+ return h+(l.length?'':`<p style="text-align:center;color:var(--sub);margin-top:40px;line-height:1.8">${T.length?'沒有符合的交易':'還沒有交易紀錄<br>點下方「＋」新增第一筆'}</p>`)}
 
 const f1=v=>{const a=Math.abs(v);return(v<0?'-':'')+(a>=1000?(a/1000).toFixed(1)+'k':a>=100?a.toFixed(0):a.toFixed(1))};
 const cum=l=>{let c=0;return l.sort((a,b)=>a.exitDate<b.exitDate?-1:1).map(t=>(c+=pnl(t)))};
