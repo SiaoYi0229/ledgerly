@@ -171,12 +171,19 @@ input[type=datetime-local]::-webkit-date-and-time-value{text-align:left;min-widt
 .x{display:grid;place-items:center;padding:4px}.x .ni{width:20px;height:20px}
 .sheet .ib,.top .ib{color:var(--tx)}
 .cd.wk.e{background:transparent;border-color:transparent}
-.swr{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}.swr:last-child{border:0}
-.swr .it{border:0;position:relative;background:var(--card);transition:transform .18s ease;touch-action:pan-y;z-index:1}
-.swdel{position:absolute;right:0;top:0;bottom:0;width:84px;border:0;background:var(--loss);color:#fff;font-size:15px;z-index:0}
+.swp{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}.swp:last-child{border:0}
+.swp .it{border:0;position:relative;background:var(--card);transition:transform .18s ease;touch-action:pan-y;z-index:1}
+.swdel{position:absolute;right:0;top:0;bottom:0;width:84px;border:0;background:var(--loss);color:#fff;font-size:15px;z-index:0;visibility:hidden}.swp.act .swdel{visibility:visible}
 .rcus{display:flex;gap:8px;align-items:center;margin:8px 0}.rcus input{flex:1;min-width:0}.rcus span{color:var(--sub)}
 input[type=date]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;max-width:100%;min-height:46px;text-align:left}
 input[type=date]::-webkit-date-and-time-value{text-align:left;min-width:0}
+/* list rows (z-index:1 for swipe) must never paint over the bottom bar */
+main{isolation:isolate}nav{z-index:4}
+/* list rows: fixed to the card width regardless of text length */
+.swp{width:100%;max-width:100%}
+.swp .it{width:100%;max-width:100%;min-width:0;box-sizing:border-box}
+.it .ic,.it .r{flex:none}.it .r{white-space:nowrap}
+.it .m{flex:1 1 0;min-width:0;overflow:hidden}.it .m small{max-width:100%}
 </style></head><body>
 <div id="app">
 <main id="main"></main>
@@ -211,7 +218,7 @@ const SEED=[
 ['2026-10-05T09:30','2026-10-05T11:00','SOLUSDT','Long','5m','ICT',220,226,1200,214],
 ['2026-10-10T20:10','','ETHUSDT','Long','5m','3+1',4320,'',1000,4270]];
 const sample=()=>[];
-function load(){try{T=JSON.parse(localStorage.getItem(K)||'null')}catch{T=null}try{S={...S,...JSON.parse(localStorage.getItem(KS)||'{}')}}catch{}if(!Array.isArray(T))T=sample();T=T.filter(t=>!(/^s\d$/.test(t.id)&&SEED.some(a=>a[0]===t.entryDate&&a[2]===t.symbol&&+a[6]===+t.entryPrice)));S.cal={...D_CAL,...S.cal};S.rules={...D_RULES,...S.rules};S.prof={...D_PROF,...S.prof};{const{ig,uid,email,...keep}=S.prof;S.prof=keep}if(S.lang!=='en')S.lang='zh-TW';if(!S.levMig){S.lev=150;S.levMig=1}fold()}
+function load(){try{T=JSON.parse(localStorage.getItem(K)||'null')}catch{T=null}try{S={...S,...JSON.parse(localStorage.getItem(KS)||'{}')}}catch{}if(!Array.isArray(T))T=sample();T=T.filter(t=>!(/^s\d$/.test(t.id)&&SEED.some(a=>a[0]===t.entryDate&&a[2]===t.symbol&&+a[6]===+t.entryPrice)));S.cal={...D_CAL,...S.cal};S.rules={...D_RULES,...S.rules};S.prof={...D_PROF,...S.prof};{const{ig,uid,email,...keep}=S.prof;S.prof=keep}if(S.lang!=='en')S.lang='zh-TW';if(!S.levMig){S.lev=150;S.levMig=1}fold();view=S.view==='cal'?'cal':'list'}
 function fold(){
  S.hid=(S.hid||[]).filter(n=>CONDS.some(c=>c[0]===n));S.hidM=(S.hidM||[]).filter(n=>MOODS.includes(n));
  S.cc=(S.cc||[]).filter(x=>{const d=CONDS.find(c=>c[0]===x[0]);if(d&&(!x[2]||x[2]===clr([d[0],d[1]]))){S.hid=S.hid.filter(n=>n!==x[0]);return false}return true});
@@ -264,12 +271,12 @@ function home(){
 
 function rec(){
  const sel=(k,o)=>`<select onchange="flt.${k}=this.value;render()" style="width:auto;padding:7px 10px;font-size:13px">${o.map(([v,l])=>`<option value="${v}" ${flt[k]===v?'selected':''}>${l}</option>`).join('')}</select>`;
- let h=head('交易紀錄',T.length+' 筆',view==='list'?rsel('l'):'')+`<div class="chips"><button class="${view==='list'?'on':''}" onclick="view='list';render()">列表</button><button class="${view==='cal'?'on':''}" onclick="view='cal';render()">日曆</button></div>`;
+ let h=head('交易紀錄',T.length+' 筆',view==='list'?rsel('l'):'')+`<div class="chips"><button class="${view==='list'?'on':''}" onclick="setView('list')">列表</button><button class="${view==='cal'?'on':''}" onclick="setView('cal')">日曆</button></div>`;
  if(view==='cal')return h+calendar();
  const l=T.filter(t=>inRange(lr,ls_,le_,day(t))&&(!flt.q||(t.symbol+t.strategy).toLowerCase().includes(flt.q.toLowerCase()))&&(!flt.side||t.side===flt.side)&&(!flt.tf||t.tf===flt.tf)&&(!flt.res||(flt.res==='open'?!isC(t):isC(t)&&(flt.res==='win'?pnl(t)>0:pnl(t)<=0)))).sort((a,b)=>day(b)+b.entryDate>day(a)+a.entryDate?1:-1);
  h+=rcus('l')+`<input placeholder="🔍 搜尋幣種 / 策略" value="${esc(flt.q)}" oninput="flt.q=this.value;clearTimeout(window._d);window._d=setTimeout(()=>{render();const i=document.querySelector('main input');i.focus();i.setSelectionRange(99,99)},250)" style="margin-top:12px"><div class="tabs">${sel('side',[['','所有方向'],['Long','做多'],['Short','做空']])}${sel('res',[['','所有結果'],['win','獲利'],['loss','虧損'],['open','未平倉']])}${sel('tf',[['','所有週期'],['1m','1m'],['3m','3m'],['5m','5m'],['15m','15m'],['Other','Other']])}</div>`;
  [...new Set(l.map(day))].forEach(d=>{const g=l.filter(t=>day(t)===d),gp=sum(g.map(t=>pnl(t)||0));
-  h+=`<div class="day"><span>${dlabel(d)}</span><span class="${sg(gp)}">${g.length} 筆 · ${fmt(gp)}</span></div><div class="card">`+g.map(t=>{const p=pnl(t),r=rm(t);return `<div class="swr"><button class="swdel" onclick="delTrade('${t.id}')">刪除</button><div class="it" data-id="${t.id}">${ico(t.symbol)}<div class="m"><b>${esc(t.symbol)}</b><span class="tag ${t.side==='Long'?'long':'short'}">${t.side==='Long'?'做多':'做空'}</span>${p==null?'<span class="tag opn">未平倉</span>':''}<small>${t.entryDate.slice(11,16)} · ${esc(t.tf)} · ${esc(lab(t))}${(t.moods||[]).length?' · '+esc(t.moods.join('、')):''}${t.tv?' · 📷':''}</small></div><div class="r ${sg(p)}">${p==null?'—':fmt(p)}<small>${r==null?'':(r>0?'+':'')+r.toFixed(2)+'R'}</small></div></div></div>`}).join('')+'</div>'});
+  h+=`<div class="day"><span>${dlabel(d)}</span><span class="${sg(gp)}">${g.length} 筆 · ${fmt(gp)}</span></div><div class="card">`+g.map(t=>{const p=pnl(t),r=rm(t);return `<div class="swp"><button class="swdel" onclick="delTrade('${t.id}')">刪除</button><div class="it" data-id="${t.id}">${ico(t.symbol)}<div class="m"><b>${esc(t.symbol)}</b><span class="tag ${t.side==='Long'?'long':'short'}">${t.side==='Long'?'做多':'做空'}</span>${p==null?'<span class="tag opn">未平倉</span>':''}<small>${t.entryDate.slice(11,16)} · ${esc(t.tf)} · ${esc(lab(t))}${(t.moods||[]).length?' · '+esc(t.moods.join('、')):''}${t.tv?' · 📷':''}</small></div><div class="r ${sg(p)}">${p==null?'—':fmt(p)}<small>${r==null?'':(r>0?'+':'')+r.toFixed(2)+'R'}</small></div></div></div>`}).join('')+'</div>'});
  return h+(l.length?'':`<p style="text-align:center;color:var(--sub);margin-top:40px;line-height:1.8">${T.length?'沒有符合的交易':'還沒有交易紀錄<br>點下方「＋」新增第一筆'}</p>`)}
 
 const f1=v=>{const a=Math.abs(v);return(v<0?'-':'')+(a>=1000?(a/1000).toFixed(1)+'k':a>=100?a.toFixed(0):a.toFixed(1))};
@@ -470,7 +477,7 @@ const DEF_ICON=(document.querySelector('link[rel="apple-touch-icon"]')||{}).href
 const iconNow=()=>S.icon||DEF_ICON;
 function applyIcon(){try{const u=S.icon||'';let l=document.querySelector('link[rel="icon"]');if(!l){l=document.createElement('link');l.rel='icon';document.head.appendChild(l)}l.type='image/png';l.href=u||DEF_FAV||DEF_ICON;document.querySelector('link[rel="apple-touch-icon"]').href=u||DEF_ICON;
  const mf=document.querySelector('link[rel="manifest"]');if(mf){if(u){const man={name:'Ledgerly',short_name:'Ledgerly',start_url:location.href.split('#')[0],display:'standalone',background_color:'#000000',theme_color:'#f5f3ee',icons:[{src:u,sizes:'512x512',type:'image/png',purpose:'any'}]};mf.href=URL.createObjectURL(new Blob([JSON.stringify(man)],{type:'application/manifest+json'}))}else if(MF_DEF)mf.href=MF_DEF}}catch{}}
-const aboutSet=()=>`<div class="card sec"><small>Ledgerly · v1.0</small><p class="note">資料保存在此瀏覽器,不會自動上傳。BingX 永續合約依倉位名義價值與費率估算手續費;槓桿只用於估算保證金,不放大損益。</p></div><div class="card sec"><div class="fh"><span>App 圖示</span></div><div class="pfr"><img src="${iconNow()}" style="width:64px;height:64px;border-radius:15px"><small class="hint">換成自己的圖示後,瀏覽器分頁圖示會立刻改變;iPhone 主畫面要刪掉捷徑後重新「加入主畫面」才會更新。</small></div><label class="btn" style="text-align:center;cursor:pointer">更換圖示<input type="file" accept="image/*" hidden onchange="pickIcon(this)"></label>${S.icon?'<button class="btn" onclick="S.icon=\'\';save();applyIcon();render()">還原預設圖示</button>':''}<button class="btn" onclick="dlIcon()">下載目前圖示(PNG)</button><small class="hint" style="display:block;margin-top:8px">在 claude.ai 預覽裡只會改變預覽內的圖示;放到你自己的網址後,才會改變瀏覽器分頁圖示。</small></div>`;
+const aboutSet=()=>`<div class="card sec"><small>Ledgerly · v1.0 · build ${BUILD}</small><p class="note">資料保存在此瀏覽器,不會自動上傳。BingX 永續合約依倉位名義價值與費率估算手續費;槓桿只用於估算保證金,不放大損益。</p></div><div class="card sec"><div class="fh"><span>App 圖示</span></div><div class="pfr"><img src="${iconNow()}" style="width:64px;height:64px;border-radius:15px"><small class="hint">換成自己的圖示後,瀏覽器分頁圖示會立刻改變;iPhone 主畫面要刪掉捷徑後重新「加入主畫面」才會更新。</small></div><label class="btn" style="text-align:center;cursor:pointer">更換圖示<input type="file" accept="image/*" hidden onchange="pickIcon(this)"></label>${S.icon?'<button class="btn" onclick="S.icon=\'\';save();applyIcon();render()">還原預設圖示</button>':''}<button class="btn" onclick="dlIcon()">下載目前圖示(PNG)</button><small class="hint" style="display:block;margin-top:8px">在 claude.ai 預覽裡只會改變預覽內的圖示;放到你自己的網址後,才會改變瀏覽器分頁圖示。</small></div>`;
 async function dlIcon(){const src=S.icon||DEF_ICON;let blob;if(src.startsWith('data:')){const b=atob(src.split(',')[1]),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);blob=new Blob([u],{type:'image/png'})}else blob=await (await fetch(src.replace('icon-180','icon-512'))).blob();await dlf('ledgerly-icon.png',blob)}
 const symSet=()=>`<div class="card sec"><div class="fh"><span>新增交易時可點選的幣種。你輸入過的新幣種會自動加到這裡。</span><span class="cnt">${allSyms().length} 項</span></div><div class="ch3">我加入的</div>${(S.syms||[]).map(x=>`<div class="trow"><span>${esc(x)}</span><button class="x" data-n="${esc(x)}" onclick="delSym(this.dataset.n)">${sic('trash')}</button></div>`).join('')||'<small class="hint">尚未加入。在新增交易輸入新幣種並存檔後,會自動出現在這裡。</small>'}<div class="addrow"><input id="ns" placeholder="輸入幣種,例如 PEPEUSDT" autocapitalize="characters"><button class="btn ok" style="margin:0;width:auto;flex:none;padding:11px 16px" onclick="addSym()">加入</button></div><div class="ch3" style="margin-top:16px">內建常用</div><div class="chips">${SYMS.map(x=>`<span class="bdg">${esc(x)}</span>`).join('')}</div></div>`;
 function addSym(){const n=normSym($('ns').value);if(!n)return;if(!allSyms().includes(n))S.syms=[n,...(S.syms||[])];save();render()}
@@ -509,6 +516,7 @@ function set(){
 function saveSet(){S={...S,maker:+$('sm').value||0,taker:+$('st').value||0,lev:+$('sl').value||10,eo:$('se').value,xo:$('sx').value};save();toast('已儲存')}
 function theme(){const e=document.documentElement,d=getComputedStyle(e).getPropertyValue('--bg').trim()==='#10161c';e.dataset.theme=d?'light':'dark'}
 
+const BUILD=26;
 const SYMS=['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','DOGEUSDT','ADAUSDT','AVAXUSDT','LINKUSDT','TRXUSDT','LTCUSDT','DOTUSDT','SUIUSDT','HYPEUSDT','TONUSDT','OIL WTI'];
 const allSyms=()=>[...(S.syms||[]),...SYMS].filter((a,i,r)=>r.indexOf(a)===i);
 const normSym=v=>{const u=(v||'').trim().toUpperCase().replace(/\s+/g,' ');if(!u)return'';const L=allSyms();return L.includes(u)?u:(L.find(x=>x===u+'USDT')||u)};
@@ -595,13 +603,14 @@ function saveT(){const t=read();if(!t.symbol||!t.side||!(+t.entryPrice>0)){toast
  {const s0=t.symbol;if(s0&&!SYMS.includes(s0))S.syms=[s0,...(S.syms||[]).filter(x=>x!==s0)]}
  try{localStorage.removeItem(KD)}catch{}save();closeForm();if(tab!=='rec')setTab('rec');else render();toast('已儲存')}
 const SWW=84;let sw=null,swOpen=null,lastSwipe=0;
-function closeSwipes(){document.querySelectorAll('.it.open').forEach(e=>{e.classList.remove('open');e.style.transform=''});swOpen=null}
+function closeSwipes(){document.querySelectorAll('.it.open').forEach(e=>{e.classList.remove('open');e.style.transform='';const w=e.parentNode;setTimeout(()=>w.classList.remove('act'),220)});swOpen=null}
+function setView(v){view=v;S.view=v;save();render()}
 function delTrade(id){if(cf('刪除這筆交易?')){T=T.filter(x=>x.id!==id);save();swOpen=null;render();toast('已刪除')}}
 (()=>{const m=$('main');
  m.addEventListener('pointerdown',e=>{const it=e.target.closest('.it[data-id]');if(!it||e.target.closest('.swdel'))return;if(swOpen&&swOpen!==it)closeSwipes();sw={it,x:e.clientX,y:e.clientY,base:it.classList.contains('open')?-SWW:0,dx:0,dir:null,moved:false}});
  m.addEventListener('pointermove',e=>{if(!sw)return;const dx=e.clientX-sw.x,dy=e.clientY-sw.y;if(!sw.dir){if(Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy))sw.dir='h';else if(Math.abs(dy)>8)sw.dir='v';else return}
-  if(sw.dir!=='h')return;sw.moved=true;sw.it.style.transition='none';sw.dx=Math.max(-SWW,Math.min(0,sw.base+dx));sw.it.style.transform='translateX('+sw.dx+'px)'});
- const end=()=>{if(!sw)return;const q=sw;sw=null;q.it.style.transition='';if(q.moved){const op=q.dx<-SWW/2;q.it.classList.toggle('open',op);q.it.style.transform=op?'translateX('+(-SWW)+'px)':'';swOpen=op?q.it:null;lastSwipe=Date.now()}};
+  if(sw.dir!=='h')return;sw.moved=true;sw.it.parentNode.classList.add('act');sw.it.style.transition='none';sw.dx=Math.max(-SWW,Math.min(0,sw.base+dx));sw.it.style.transform='translateX('+sw.dx+'px)'});
+ const end=()=>{if(!sw)return;const q=sw;sw=null;q.it.style.transition='';if(q.moved){const op=q.dx<-SWW/2;q.it.classList.toggle('open',op);q.it.style.transform=op?'translateX('+(-SWW)+'px)':'';swOpen=op?q.it:null;lastSwipe=Date.now();if(!op){const w=q.it.parentNode;setTimeout(()=>{if(!q.it.classList.contains('open'))w.classList.remove('act')},220)}}};
  m.addEventListener('pointerup',end);m.addEventListener('pointercancel',end);
  m.addEventListener('click',e=>{const it=e.target.closest('.it[data-id]');if(!it)return;if(Date.now()-lastSwipe<350)return;if(swOpen){closeSwipes();return}openForm(it.dataset.id)})})();
 function delT(){if(cf('刪除這筆交易?')){T=T.filter(x=>x.id!==eid);save();closeForm();render()}}

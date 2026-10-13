@@ -29,4 +29,10 @@ iPhone 加到主畫面
 
 之後要更新
   直接把新的 index.html 覆蓋上傳。若畫面沒更新,把 sw.js 裡的
-  ledgerly-v23 改成 ledgerly-v24 再上傳即可。
+  ledgerly-v26 改成 ledgerly-v27 再上傳即可。
+
+確認目前跑的是哪個版本
+  打開 App → 設定 → 關於我們,最上面會顯示「build 26」這類編號。
+  如果編號比你預期的舊,代表手機還在用舊檔:
+    1) 確認新的 index.html 和 sw.js 都有上傳並覆蓋;
+    2) 在手機 Safari 重新整理(或把主畫面的捷徑刪掉重新加入)。
